@@ -55,7 +55,7 @@ function requirePermission(ressource, action) {
                 return res.status(403).json({ error: 'Permission refusée' });
             }
 
-            next(); // appelé seulement si la permission est ok
+            next();
         } catch (error) {
             console.error('Erreur vérification permission:', error);
             res.status(500).json({ error: 'Erreur serveur' });
@@ -71,7 +71,6 @@ async function requireAuthWithFunction(req, res, next) {
     token = token.replace(/^Bearer\s+/i, '').trim();
 
     try {
-        // Utiliser la fonction stockée
         const validResult = await pool.query(
             'SELECT est_token_valide($1) AS valide',
             [token]
@@ -80,7 +79,6 @@ async function requireAuthWithFunction(req, res, next) {
             return res.status(401).json({ error: 'Token invalide ou expiré'
             })
         }
-            // Récupérer les infos utilisateur
             const userResult = await pool.query(
                 `SELECT s.utilisateur_id, u.email, u.nom, u.prenom
  FROM sessions s
