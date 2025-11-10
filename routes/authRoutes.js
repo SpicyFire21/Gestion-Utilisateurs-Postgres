@@ -4,6 +4,7 @@ const pool = require('../database/db');
 const { v4: uuidv4 } = require('uuid');
 const { requireAuth,requirePermission } = require('../middleware/auth');
 
+
 const bcrypt = require('bcrypt');
 
 router.post('/register', async (req, res) => {
@@ -172,10 +173,7 @@ router.get('/profile', requireAuth, async (req, res) => {
     }
 });
 
-router.delete('/users/:id',
-    requireAuth,
-    requirePermission('users', 'delete'),
-    async (req, res) => {
+router.delete('/users/:id', requireAuth, requirePermission('users', 'delete'), async (req, res) => {
         try {
             const { id } = req.params;
             await pool.query('DELETE FROM utilisateurs WHERE id = $1', [id]);
@@ -186,5 +184,45 @@ router.delete('/users/:id',
         }
     }
 );
+
+router.post('/logout', requireAuth, async (req, res) => {
+    const token = req.headers['authorization'];
+
+    if (!token) {
+        return res.status(400).json({ error: 'Token manquant' });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Désactiver la session
+        await client.query(
+            `UPDATE sessions
+             SET actif = false
+             WHERE token = $1`,
+            [token]
+        );
+
+        // 2. Logger la déconnexion dans logs_connexion
+        await client.query(
+            `INSERT INTO logs_connexion (utilisateur_id, email_tentative, date_heure, adresse_ip, user_agent, succes, message)
+             VALUES ($1, $2, NOW(), $3, $4, true, 'Déconnexion réussie')`,
+            [req.user.id, req.user.email, req.ip, req.headers['user-agent']]
+        );
+
+        await client.query('COMMIT');
+
+        res.json({ message: 'Déconnexion réussie' });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erreur logout:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    } finally {
+        client.release();
+    }
+});
+
+
 
 module.exports = router;

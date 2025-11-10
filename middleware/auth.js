@@ -2,10 +2,13 @@ const pool = require('../database/db');
 
 async function requireAuth(req, res, next) {
     try {
-        const token = req.headers['authorization'];
+        let token = req.headers['authorization'];
+        console.log(token)
         if (!token) {
             return res.status(401).json({ error: 'Token manquant' });
         }
+        token = token.replace(/^Bearer\s+/i, '').trim();
+
 
         // la requête c'est un lundi
         const result = await pool.query(
@@ -60,4 +63,37 @@ function requirePermission(ressource, action) {
     };
 }
 
-module.exports = { requireAuth, requirePermission };
+async function requireAuthWithFunction(req, res, next) {
+    let token = req.headers['authorization'];
+    if (!token) {
+        return res.status(401).json({ error: 'Token manquant' });
+    }
+    token = token.replace(/^Bearer\s+/i, '').trim();
+
+    try {
+        // Utiliser la fonction stockée
+        const validResult = await pool.query(
+            'SELECT est_token_valide($1) AS valide',
+            [token]
+        );
+        if (!validResult.rows[0].valide) {
+            return res.status(401).json({ error: 'Token invalide ou expiré'
+            })
+        }
+            // Récupérer les infos utilisateur
+            const userResult = await pool.query(
+                `SELECT s.utilisateur_id, u.email, u.nom, u.prenom
+ FROM sessions s
+ INNER JOIN utilisateurs u ON s.utilisateur_id = u.id
+ WHERE s.token = $1`,
+                [token]
+            );
+            req.user = userResult.rows[0];
+            next();
+        } catch (error) {
+            console.error('Erreur middleware auth:', error);
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    }
+
+module.exports = { requireAuth, requirePermission,requireAuthWithFunction };
