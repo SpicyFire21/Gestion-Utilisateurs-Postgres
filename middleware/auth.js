@@ -38,4 +38,26 @@ async function requireAuth(req, res, next) {
     }
 }
 
-module.exports = { requireAuth };
+
+
+function requirePermission(ressource, action) {
+    return async (req, res, next) => {
+        try {
+            const result = await pool.query(
+                'SELECT utilisateur_a_permission($1, $2, $3) AS a_permission',
+                [req.user.utilisateur_id, ressource, action]
+            );
+
+            if (!result.rows[0].a_permission) {
+                return res.status(403).json({ error: 'Permission refusée' });
+            }
+
+            next(); // appelé seulement si la permission est ok
+        } catch (error) {
+            console.error('Erreur vérification permission:', error);
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    };
+}
+
+module.exports = { requireAuth, requirePermission };

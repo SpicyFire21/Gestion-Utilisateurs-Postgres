@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../database/db');
 const { v4: uuidv4 } = require('uuid');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth,requirePermission } = require('../middleware/auth');
 
 const bcrypt = require('bcrypt');
 
@@ -171,5 +171,20 @@ router.get('/profile', requireAuth, async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur 🫵😂🫵😂🫵😂🫵😂' });
     }
 });
+
+router.delete('/users/:id',
+    requireAuth,
+    requirePermission('users', 'delete'),
+    async (req, res) => {
+        try {
+            const { id } = req.params;
+            await pool.query('DELETE FROM utilisateurs WHERE id = $1', [id]);
+            res.json({ message: 'Utilisateur supprimé' });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erreur serveur' });
+        }
+    }
+);
 
 module.exports = router;
