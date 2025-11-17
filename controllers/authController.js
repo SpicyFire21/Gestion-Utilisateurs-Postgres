@@ -49,3 +49,13 @@ exports.deleteUser = async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
+
+exports.getLogs = async (req,res) =>{
+    try {
+        const result = await  authService.getLogs(req.user.id);
+        res.json(result);
+    }catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+}

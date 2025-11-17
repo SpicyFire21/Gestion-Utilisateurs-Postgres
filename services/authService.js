@@ -94,8 +94,14 @@ async function deleteUser(id) {
     return { message: 'Utilisateur supprimé', user: r.rows[0] };
 };
 
+async function getLogs(id){
+    const res = await pool.query('SELECT * FROM logs_connexion WHERE utilisateur_id = $1 ORDER BY date_heure DESC LIMIT 50',[id])
+    // if (res.rows.length === 0) throw new Error('Historique vide');
+    return { message: 'Historique trouvé', user: res.rows };
+}
+
 module.exports = {
     register,
     login,
-    deleteUser,logout,profile
+    deleteUser,logout,profile,getLogs
 };
