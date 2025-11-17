@@ -60,3 +60,13 @@ exports.getPermissions= async (req, res) => {
     }
 }
 
+exports.getUser = async (req,res) =>{
+    const { id } = req.params;
+    try {
+        const data = await userService.getUser(id);
+        res.json({ data: data });
+    } catch (error) {
+        console.error('Erreur récupération de l\'utilisateur:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+}

@@ -45,6 +45,8 @@ async function login({ email, password }){
         const token = uuidv4();
         const exp = new Date(Date.now() + 24 * 3600 * 1000);
         await client.query(`INSERT INTO sessions(utilisateur_id,token,date_expiration) VALUES($1,$2,$3)`, [u.id, token, exp]);
+
+
         await client.query('COMMIT');
         return { message: 'Connexion réussie', token, user: { id: u.id, email: u.email, nom: u.nom, prenom: u.prenom }, expiresAt: exp };
     } catch (e) {
@@ -95,6 +97,7 @@ async function deleteUser(id) {
 };
 
 async function getLogs(id){
+    console.log(id)
     const res = await pool.query('SELECT * FROM logs_connexion WHERE utilisateur_id = $1 ORDER BY date_heure DESC LIMIT 50',[id])
     // if (res.rows.length === 0) throw new Error('Historique vide');
     return { message: 'Historique trouvé', user: res.rows };

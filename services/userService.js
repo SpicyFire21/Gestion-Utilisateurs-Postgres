@@ -59,9 +59,30 @@ async function getUserPermissions(id) {
     return result.rows;
 }
 
+
+async function getUser(id) {
+    const countResult = await pool.query('SELECT COUNT(*) FROM utilisateurs');
+    const totalUsers = parseInt(countResult.rows[0].count);
+
+    const usersResult = await pool.query(
+        `SELECT u.id, u.email, u.nom, u.prenom, u.date_creation,
+                array_agg(r.nom) AS roles
+         FROM utilisateurs u
+                  LEFT JOIN utilisateur_roles ur ON u.id = ur.utilisateur_id
+                  LEFT JOIN roles r ON ur.role_id = r.id
+         WHERE u.id = $1
+         GROUP BY u.id, u.email, u.nom, u.prenom, u.date_creation`,
+        [id]
+    );
+
+    return { totalUsers, users: usersResult.rows };
+}
+
+
 module.exports = {
     getUsers,
     updateUser,
     deleteUser,
-    getUserPermissions
+    getUserPermissions,
+    getUser
 };
